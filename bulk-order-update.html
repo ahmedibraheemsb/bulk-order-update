@@ -83,11 +83,11 @@
   .status-btn .icon { font-size: 1.1rem; display: block; margin-bottom: 0.2rem; }
   .status-btn:hover { border-color: var(--text-dim); }
 
-  .status-btn.shipped.active   { border-color: var(--scanner); background: rgba(0,212,255,0.15); color: var(--scanner); }
-  .status-btn.delivered.active { border-color: var(--success); background: var(--success-glow); color: var(--success); }
-  .status-btn.returned.active  { border-color: var(--orange);  background: var(--orange-glow);  color: var(--orange); }
-  .status-btn.cancelled.active { border-color: var(--error);   background: var(--error-glow);   color: var(--error); }
-  .status-btn.ready.active     { border-color: var(--purple);  background: var(--purple-glow);  color: var(--purple); }
+  .status-btn.Shipped.active   { border-color: var(--scanner); background: rgba(0,212,255,0.15); color: var(--scanner); }
+  .status-btn.Delivered.active { border-color: var(--success); background: var(--success-glow); color: var(--success); }
+  .status-btn.Returned.active  { border-color: var(--orange);  background: var(--orange-glow);  color: var(--orange); }
+  .status-btn.Cancelled.active { border-color: var(--error);   background: var(--error-glow);   color: var(--error); }
+  .status-btn.Ready.active     { border-color: var(--purple);  background: var(--purple-glow);  color: var(--purple); }
 
   .courier-selector {
     display: grid;
@@ -214,11 +214,11 @@
 
   .btn-primary:hover { filter: brightness(1.1); }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-primary.shipped   { background: var(--scanner); color: #000; }
-  .btn-primary.delivered { background: var(--success); }
-  .btn-primary.returned  { background: var(--orange); }
-  .btn-primary.cancelled { background: var(--error); }
-  .btn-primary.ready     { background: var(--purple); }
+  .btn-primary.Shipped   { background: var(--scanner); color: #000; }
+  .btn-primary.Delivered { background: var(--success); }
+  .btn-primary.Returned  { background: var(--orange); }
+  .btn-primary.Cancelled { background: var(--error); }
+  .btn-primary.Ready     { background: var(--purple); }
 
   .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 0.75rem; display: none; }
   .progress-bar.active { display: block; }
@@ -282,19 +282,19 @@
   <div class="card">
     <h2 class="card-title">📌 اختر الحالة</h2>
     <div class="status-selector">
-      <button class="status-btn shipped active" onclick="selectStatus(this,'shipped','Shipped','🚚')">
+      <button class="status-btn Shipped active" onclick="selectStatus(this,'Shipped','Shipped','🚚')">
         <span class="icon">🚚</span>Shipped
       </button>
-      <button class="status-btn delivered" onclick="selectStatus(this,'delivered','Delivered','✅')">
+      <button class="status-btn Delivered" onclick="selectStatus(this,'Delivered','Delivered','✅')">
         <span class="icon">✅</span>Delivered
       </button>
-      <button class="status-btn returned" onclick="selectStatus(this,'returned','Returned','↩️')">
+      <button class="status-btn Returned" onclick="selectStatus(this,'Returned','Returned','↩️')">
         <span class="icon">↩️</span>Returned
       </button>
-      <button class="status-btn cancelled" onclick="selectStatus(this,'cancelled','Cancelled','❌')">
+      <button class="status-btn Cancelled" onclick="selectStatus(this,'Cancelled','Cancelled','❌')">
         <span class="icon">❌</span>Cancelled
       </button>
-      <button class="status-btn ready" onclick="selectStatus(this,'ready-to-ship','Ready to Ship','📦')">
+      <button class="status-btn Ready" onclick="selectStatus(this,'Ready','Ready','📦')">
         <span class="icon">📦</span>Ready
       </button>
     </div>
@@ -313,7 +313,9 @@
       <button class="courier-btn"        data-courier="Abo Selim"     onclick="selectCourier(this)">Abo Selim</button>
       <button class="courier-btn"        data-courier="Waleed"        onclick="selectCourier(this)">Waleed</button>
       <button class="courier-btn"        data-courier="3bd Alrahman"  onclick="selectCourier(this)">3bd Alrahman</button>
-    </div>
+      <button class="courier-btn"        data-courier="Sobhy"         onclick="selectCourier(this)">Sobhy</button>
+      <button class="courier-btn"        data-courier="Abo Yassin"    onclick="selectCourier(this)">Abo Yassin</button>
+</div>
   </div>
 
   <!-- Order Numbers -->
@@ -362,7 +364,7 @@
   </div>
 
   <!-- Action -->
-  <button class="btn-primary shipped" id="updateBtn" onclick="startUpdate()">
+  <button class="btn-primary Shipped" id="updateBtn" onclick="startUpdate()">
     🚀 تحديث الكل
   </button>
 
@@ -385,7 +387,7 @@
 
 </div>
 <script>
-  let currentSpecifier = 'shipped';
+  let currentSpecifier = 'Shipped';
   let currentStatusLabel = 'Shipped';
   let currentIcon = '🚚';
   let currentCourier = 'Bosta';
@@ -405,9 +407,9 @@
     currentStatusLabel = label;
     currentIcon        = icon;
     document.getElementById('summaryStatus').textContent = `${icon} ${label}`;
-    const cls = specifier === 'ready-to-ship' ? 'ready' : specifier;
+    const cls = specifier === 'Ready' ? 'Ready' : specifier;
     document.getElementById('updateBtn').className = `btn-primary ${cls}`;
-    const show = specifier !== 'ready-to-ship';
+    const show = specifier !== 'Ready';
     document.getElementById('courierCard').style.display = show ? 'block' : 'none';
     document.getElementById('courierRow').style.display  = show ? 'flex'  : 'none';
   }
@@ -450,7 +452,7 @@
       return;
     }
 
-    const confirmMsg = currentSpecifier === 'ready-to-ship'
+    const confirmMsg = currentSpecifier === 'Ready'
       ? `تحديث ${parsedOrders.length} أوردر؟\nالحالة: ${currentStatusLabel}`
       : `تحديث ${parsedOrders.length} أوردر؟\nالحالة: ${currentStatusLabel}\nالمندوب: ${currentCourier}`;
 
@@ -486,7 +488,7 @@
         body: JSON.stringify({
           orderNumbers: parsedOrders,
           specifier: currentSpecifier,
-          courier: currentSpecifier !== 'ready-to-ship' ? currentCourier : null,
+          courier: currentSpecifier !== 'Ready' ? currentCourier : null,
         }),
       });
 
@@ -513,7 +515,7 @@
         document.getElementById('successCount').textContent = success;
         document.getElementById('errorCount').textContent   = errors;
         if (errors === 0) {
-          alert(`✅ تم تحديث ${success} أوردر بنجاح!\nالحالة: ${currentStatusLabel}${currentSpecifier !== 'ready-to-ship' ? '\nالمندوب: ' + currentCourier : ''}`);
+          alert(`✅ تم تحديث ${success} أوردر بنجاح!\nالحالة: ${currentStatusLabel}${currentSpecifier !== 'Ready' ? '\nالمندوب: ' + currentCourier : ''}`);
         } else {
           alert(`تم: ${success} ناجح، ${errors} فشل`);
         }
