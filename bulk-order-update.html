@@ -282,7 +282,7 @@
   <div class="card">
     <h2 class="card-title">📌 اختر الحالة</h2>
     <div class="status-selector">
-      <button class="status-btn Shipped active" onclick="selectStatus(this,'Shipped','Shipped','🚚')">
+      <button class="status-btn Shipped" onclick="selectStatus(this,'Shipped','Shipped','🚚')">
         <span class="icon">🚚</span>Shipped
       </button>
       <button class="status-btn Delivered" onclick="selectStatus(this,'Delivered','Delivered','✅')">
@@ -304,7 +304,7 @@
   <div class="card" id="courierCard">
     <h2 class="card-title">🛵 اختر المندوب</h2>
     <div class="courier-selector">
-      <button class="courier-btn active" data-courier="Bosta"         onclick="selectCourier(this)">Bosta</button>
+      <button class="courier-btn" data-courier="Bosta"         onclick="selectCourier(this)">Bosta</button>
       <button class="courier-btn"        data-courier="3laa"          onclick="selectCourier(this)">3laa</button>
       <button class="courier-btn"        data-courier="3bdo 3rafa"    onclick="selectCourier(this)">3bdo 3rafa</button>
       <button class="courier-btn"        data-courier="Kareem"        onclick="selectCourier(this)">Kareem</button>
@@ -315,7 +315,7 @@
       <button class="courier-btn"        data-courier="3bd Alrahman"  onclick="selectCourier(this)">3bd Alrahman</button>
       <button class="courier-btn"        data-courier="Sobhy"         onclick="selectCourier(this)">Sobhy</button>
       <button class="courier-btn"        data-courier="Abo Yassin"    onclick="selectCourier(this)">Abo Yassin</button>
-</div>
+    </div>
   </div>
 
   <!-- Order Numbers -->
@@ -326,7 +326,7 @@
     </div>
     <textarea
       id="orderInput"
-      placeholder="#32101&#10;#32103&#10;#32105&#10;&#10;أو: 32101, 32103, 32105"
+      placeholder=""
       oninput="parseOrders()"
     ></textarea>
     <p class="input-hint">✦ مقبول: #32101 أو 32101 · سطر جديد أو فاصلة</p>
@@ -336,11 +336,11 @@
   <div class="summary-box">
     <div class="summary-row">
       <span class="summary-label">الحالة:</span>
-      <span class="summary-value status" id="summaryStatus">🚚 Shipped</span>
+      <span class="summary-value status" id="summaryStatus">—</span>
     </div>
     <div class="summary-row" id="courierRow">
       <span class="summary-label">المندوب:</span>
-      <span class="summary-value courier" id="summaryCourier">🛵 Bosta</span>
+      <span class="summary-value courier" id="summaryCourier">—</span>
     </div>
     <div class="summary-row">
       <span class="summary-label">عدد الأوردرات:</span>
@@ -364,7 +364,7 @@
   </div>
 
   <!-- Action -->
-  <button class="btn-primary Shipped" id="updateBtn" onclick="startUpdate()">
+  <button class="btn-primary" id="updateBtn" onclick="startUpdate()">
     🚀 تحديث الكل
   </button>
 
@@ -387,10 +387,10 @@
 
 </div>
 <script>
-  let currentSpecifier = 'Shipped';
-  let currentStatusLabel = 'Shipped';
-  let currentIcon = '🚚';
-  let currentCourier = 'Bosta';
+  let currentSpecifier = '';
+  let currentStatusLabel = '';
+  let currentIcon = '';
+  let currentCourier = '';
   let parsedOrders = [];
 
   // Load saved settings
@@ -399,6 +399,10 @@
 
   document.getElementById('workerUrl').addEventListener('change',    e => localStorage.setItem('bulk_worker_url',    e.target.value));
   document.getElementById('workerSecret').addEventListener('change', e => localStorage.setItem('bulk_worker_secret', e.target.value));
+
+  function needsCourier(specifier) {
+    return specifier !== 'Ready' && specifier !== 'Cancelled';
+  }
 
   function selectStatus(btn, specifier, label, icon) {
     document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
@@ -409,7 +413,7 @@
     document.getElementById('summaryStatus').textContent = `${icon} ${label}`;
     const cls = specifier === 'Ready' ? 'Ready' : specifier;
     document.getElementById('updateBtn').className = `btn-primary ${cls}`;
-    const show = specifier !== 'Ready';
+    const show = needsCourier(specifier);
     document.getElementById('courierCard').style.display = show ? 'block' : 'none';
     document.getElementById('courierRow').style.display  = show ? 'flex'  : 'none';
   }
@@ -447,14 +451,22 @@
       document.getElementById('settings').classList.add('active');
       return;
     }
+    if (!currentSpecifier) {
+      alert('اختر الحالة أولاً');
+      return;
+    }
+    if (needsCourier(currentSpecifier) && !currentCourier) {
+      alert('اختر المندوب أولاً');
+      return;
+    }
     if (parsedOrders.length === 0) {
       alert('أدخل أرقام الأوردرات أولاً');
       return;
     }
 
-    const confirmMsg = currentSpecifier === 'Ready'
-      ? `تحديث ${parsedOrders.length} أوردر؟\nالحالة: ${currentStatusLabel}`
-      : `تحديث ${parsedOrders.length} أوردر؟\nالحالة: ${currentStatusLabel}\nالمندوب: ${currentCourier}`;
+    const confirmMsg = needsCourier(currentSpecifier)
+      ? `تحديث ${parsedOrders.length} أوردر؟\nالحالة: ${currentStatusLabel}\nالمندوب: ${currentCourier}`
+      : `تحديث ${parsedOrders.length} أوردر؟\nالحالة: ${currentStatusLabel}`;
 
     if (!confirm(confirmMsg)) return;
 
@@ -488,7 +500,7 @@
         body: JSON.stringify({
           orderNumbers: parsedOrders,
           specifier: currentSpecifier,
-          courier: currentSpecifier !== 'Ready' ? currentCourier : null,
+          courier: needsCourier(currentSpecifier) ? currentCourier : null,
         }),
       });
 
@@ -515,7 +527,7 @@
         document.getElementById('successCount').textContent = success;
         document.getElementById('errorCount').textContent   = errors;
         if (errors === 0) {
-          alert(`✅ تم تحديث ${success} أوردر بنجاح!\nالحالة: ${currentStatusLabel}${currentSpecifier !== 'Ready' ? '\nالمندوب: ' + currentCourier : ''}`);
+          alert(`✅ تم تحديث ${success} أوردر بنجاح!\nالحالة: ${currentStatusLabel}${needsCourier(currentSpecifier) ? '\nالمندوب: ' + currentCourier : ''}`);
         } else {
           alert(`تم: ${success} ناجح، ${errors} فشل`);
         }
