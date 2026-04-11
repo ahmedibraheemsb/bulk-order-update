@@ -112,8 +112,6 @@
   .courier-btn:hover { border-color: var(--text-dim); }
   .courier-btn.active { border-color: var(--pink); background: var(--pink-glow); color: var(--pink); }
 
-  .order-input-wrap { position: relative; }
-
   textarea {
     width: 100%;
     background: var(--bg-input);
@@ -224,6 +222,19 @@
   .progress-bar.active { display: block; }
   .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; width: 0%; }
 
+  /* Phase indicator */
+  .phase-indicator {
+    display: none;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-align: center;
+    margin-bottom: 0.5rem;
+    padding: 0.4rem;
+    background: var(--bg-input);
+    border-radius: 6px;
+  }
+  .phase-indicator.active { display: block; }
+
   .results { display: none; }
   .results.active { display: block; }
 
@@ -256,6 +267,7 @@
   .result-pending { background: rgba(59,130,246,0.15); color: #3b82f6; }
   .result-success { background: var(--success-glow); color: var(--success); }
   .result-error   { background: var(--error-glow);   color: var(--error); }
+  .result-notfound { background: var(--orange-glow); color: var(--orange); }
 
   .spinner {
     width: 14px; height: 14px;
@@ -305,19 +317,19 @@
     <h2 class="card-title">🛵 اختر المندوب</h2>
     <div class="courier-selector">
       <button class="courier-btn" data-courier="Bosta"         onclick="selectCourier(this)">Bosta</button>
-      <button class="courier-btn"        data-courier="3laa"          onclick="selectCourier(this)">3laa</button>
-      <button class="courier-btn"        data-courier="3bdo 3rafa"    onclick="selectCourier(this)">3bdo 3rafa</button>
-	  <button class="courier-btn"        data-courier="Kareem"        onclick="selectCourier(this)">Kareem</button>
-      <button class="courier-btn"        data-courier="Mohamed Tarek" onclick="selectCourier(this)">Mohamed Tarek</button>
-      <button class="courier-btn"        data-courier="Magdy"         onclick="selectCourier(this)">Magdy</button>
-      <button class="courier-btn"        data-courier="Marwan"        onclick="selectCourier(this)">Marwan</button>
-	  <button class="courier-btn"        data-courier="Abo Selim"     onclick="selectCourier(this)">Abo Selim</button>
-      <button class="courier-btn"        data-courier="Waleed"        onclick="selectCourier(this)">Waleed</button>
-      <button class="courier-btn"        data-courier="3bd Alrahman"  onclick="selectCourier(this)">3bd Alrahman</button>
-      <button class="courier-btn"        data-courier="Sobhy"         onclick="selectCourier(this)">Sobhy</button>
-      <button class="courier-btn"        data-courier="Abo Yassin"    onclick="selectCourier(this)">Abo Yassin</button>
-      <button class="courier-btn"		 data-courier="3bdo S3eed"    onclick="selectCourier(this)">3bdo S3eed</button>
-      <button class="courier-btn"		 data-courier="Aly Yousry"    onclick="selectCourier(this)">Aly Yousry</button>
+      <button class="courier-btn" data-courier="3laa"          onclick="selectCourier(this)">3laa</button>
+      <button class="courier-btn" data-courier="3bdo 3rafa"    onclick="selectCourier(this)">3bdo 3rafa</button>
+      <button class="courier-btn" data-courier="Kareem"        onclick="selectCourier(this)">Kareem</button>
+      <button class="courier-btn" data-courier="Mohamed Tarek" onclick="selectCourier(this)">Mohamed Tarek</button>
+      <button class="courier-btn" data-courier="Magdy"         onclick="selectCourier(this)">Magdy</button>
+      <button class="courier-btn" data-courier="Marwan"        onclick="selectCourier(this)">Marwan</button>
+      <button class="courier-btn" data-courier="Abo Selim"     onclick="selectCourier(this)">Abo Selim</button>
+      <button class="courier-btn" data-courier="Waleed"        onclick="selectCourier(this)">Waleed</button>
+      <button class="courier-btn" data-courier="3bd Alrahman"  onclick="selectCourier(this)">3bd Alrahman</button>
+      <button class="courier-btn" data-courier="Sobhy"         onclick="selectCourier(this)">Sobhy</button>
+      <button class="courier-btn" data-courier="Abo Yassin"    onclick="selectCourier(this)">Abo Yassin</button>
+      <button class="courier-btn" data-courier="3bdo S3eed"    onclick="selectCourier(this)">3bdo S3eed</button>
+      <button class="courier-btn" data-courier="Aly Yousry"    onclick="selectCourier(this)">Aly Yousry</button>
     </div>
   </div>
 
@@ -357,11 +369,15 @@
     <div class="card">
       <div class="input-group">
         <label>Worker URL</label>
-        <input type="text" id="workerUrl" placeholder="https://your-worker.workers.dev">
+        <input type="text" id="workerUrl" placeholder="https://bulk-update-worker.ecommoda24.workers.dev">
       </div>
       <div class="input-group">
         <label>Worker Secret</label>
         <input type="password" id="workerSecret" placeholder="WORKER_SECRET">
+      </div>
+      <div class="input-group" style="margin-bottom:0;">
+        <label>Flow Companion Token</label>
+        <input type="password" id="flowToken" placeholder="Flow Companion API Token">
       </div>
     </div>
   </div>
@@ -370,6 +386,8 @@
   <button class="btn-primary" id="updateBtn" onclick="startUpdate()">
     🚀 تحديث الكل
   </button>
+
+  <div class="phase-indicator" id="phaseIndicator"></div>
 
   <div class="progress-bar" id="progressBar">
     <div class="progress-fill" id="progressFill"></div>
@@ -390,18 +408,22 @@
 
 </div>
 <script>
-  let currentSpecifier = '';
+  const FLOW_API_URL = 'https://flow-companion.mivicle.app/rest/1/flow/start/order';
+
+  let currentSpecifier  = '';
   let currentStatusLabel = '';
-  let currentIcon = '';
-  let currentCourier = '';
-  let parsedOrders = [];
+  let currentIcon       = '';
+  let currentCourier    = '';
+  let parsedOrders      = [];
 
   // Load saved settings
   document.getElementById('workerUrl').value    = localStorage.getItem('bulk_worker_url')    || '';
   document.getElementById('workerSecret').value = localStorage.getItem('bulk_worker_secret') || '';
+  document.getElementById('flowToken').value    = localStorage.getItem('bulk_flow_token')    || '';
 
   document.getElementById('workerUrl').addEventListener('change',    e => localStorage.setItem('bulk_worker_url',    e.target.value));
   document.getElementById('workerSecret').addEventListener('change', e => localStorage.setItem('bulk_worker_secret', e.target.value));
+  document.getElementById('flowToken').addEventListener('change',    e => localStorage.setItem('bulk_flow_token',    e.target.value));
 
   function needsCourier(specifier) {
     return specifier !== 'Ready' && specifier !== 'Cancelled';
@@ -414,8 +436,7 @@
     currentStatusLabel = label;
     currentIcon        = icon;
     document.getElementById('summaryStatus').textContent = `${icon} ${label}`;
-    const cls = specifier === 'Ready' ? 'Ready' : specifier;
-    document.getElementById('updateBtn').className = `btn-primary ${cls}`;
+    document.getElementById('updateBtn').className = `btn-primary ${specifier}`;
     const show = needsCourier(specifier);
     document.getElementById('courierCard').style.display = show ? 'block' : 'none';
     document.getElementById('courierRow').style.display  = show ? 'flex'  : 'none';
@@ -429,9 +450,9 @@
   }
 
   function parseOrders() {
-    const raw = document.getElementById('orderInput').value;
+    const raw    = document.getElementById('orderInput').value;
     const tokens = raw.split(/[\n,]+/).map(t => t.trim()).filter(t => t.length > 0);
-    const valid = [];
+    const valid  = [];
     for (const t of tokens) {
       const num = t.replace(/^#/, '').trim();
       if (/^\d+$/.test(num)) valid.push(`#${num}`);
@@ -445,32 +466,34 @@
     document.getElementById('settings').classList.toggle('active');
   }
 
+  function setPhase(msg) {
+    const el = document.getElementById('phaseIndicator');
+    if (msg) { el.textContent = msg; el.classList.add('active'); }
+    else      { el.classList.remove('active'); }
+  }
+
   async function startUpdate() {
     const workerUrl    = document.getElementById('workerUrl').value.trim();
     const workerSecret = document.getElementById('workerSecret').value.trim();
+    const flowToken    = document.getElementById('flowToken').value.trim();
 
     if (!workerUrl || !workerSecret) {
       alert('أدخل Worker URL و Worker Secret في الإعدادات');
       document.getElementById('settings').classList.add('active');
       return;
     }
-    if (!currentSpecifier) {
-      alert('اختر الحالة أولاً');
+    if (!flowToken) {
+      alert('أدخل Flow Companion Token في الإعدادات');
+      document.getElementById('settings').classList.add('active');
       return;
     }
-    if (needsCourier(currentSpecifier) && !currentCourier) {
-      alert('اختر المندوب أولاً');
-      return;
-    }
-    if (parsedOrders.length === 0) {
-      alert('أدخل أرقام الأوردرات أولاً');
-      return;
-    }
+    if (!currentSpecifier) { alert('اختر الحالة أولاً'); return; }
+    if (needsCourier(currentSpecifier) && !currentCourier) { alert('اختر المندوب أولاً'); return; }
+    if (parsedOrders.length === 0) { alert('أدخل أرقام الأوردرات أولاً'); return; }
 
     const confirmMsg = needsCourier(currentSpecifier)
       ? `تحديث ${parsedOrders.length} أوردر؟\nالحالة: ${currentStatusLabel}\nالمندوب: ${currentCourier}`
       : `تحديث ${parsedOrders.length} أوردر؟\nالحالة: ${currentStatusLabel}`;
-
     if (!confirm(confirmMsg)) return;
 
     const btn = document.getElementById('updateBtn');
@@ -493,6 +516,11 @@
       </div>
     `).join('');
 
+    // ── Phase 1: Shopify lookup via Worker ────────────────────────────
+    setPhase('⏳ الخطوة 1/2: جاري جلب بيانات الأوردرات من Shopify...');
+    document.getElementById('progressFill').style.width = '10%';
+
+    let lookupResults = [];
     try {
       const response = await fetch(workerUrl, {
         method: 'POST',
@@ -500,49 +528,116 @@
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${workerSecret}`,
         },
-        body: JSON.stringify({
-          orderNumbers: parsedOrders,
-          specifier: currentSpecifier,
-          courier: needsCourier(currentSpecifier) ? currentCourier : null,
-        }),
+        body: JSON.stringify({ orderNumbers: parsedOrders }),
       });
-
       const data = await response.json();
-      document.getElementById('progressFill').style.width = '100%';
-
-      if (data.results) {
-        let success = 0, errors = 0;
-        for (const r of data.results) {
-          const num = r.orderNumber.replace('#', '');
-          const el  = document.getElementById(`result-${num}`);
-          if (!el) continue;
-          if (r.success) {
-            success++;
-            el.querySelector('.result-status').className   = 'result-status result-success';
-            el.querySelector('.result-status').textContent = '✓';
-          } else {
-            errors++;
-            el.querySelector('.result-status').className   = 'result-status result-error';
-            el.querySelector('.result-status').textContent = '✗';
-            el.querySelector('.result-msg').textContent    = r.error || '';
-          }
-        }
-        document.getElementById('successCount').textContent = success;
-        document.getElementById('errorCount').textContent   = errors;
-        if (errors === 0) {
-          alert(`✅ تم تحديث ${success} أوردر بنجاح!\nالحالة: ${currentStatusLabel}${needsCourier(currentSpecifier) ? '\nالمندوب: ' + currentCourier : ''}`);
-        } else {
-          alert(`تم: ${success} ناجح، ${errors} فشل`);
-        }
-      } else {
-        resultsList.innerHTML = `<div class="result-item"><span class="result-msg" style="color:var(--error)">${data.error || 'خطأ غير متوقع'}</span></div>`;
+      if (!data.success || !data.results) {
+        throw new Error(data.error || 'فشل في جلب بيانات الأوردرات');
       }
+      lookupResults = data.results;
     } catch (err) {
-      resultsList.innerHTML = `<div class="result-item"><span class="result-msg" style="color:var(--error)">خطأ في الاتصال: ${err.message}</span></div>`;
+      setPhase('');
+      resultsList.innerHTML = `<div class="result-item"><span class="result-msg" style="color:var(--error)">خطأ في الاتصال بالـ Worker: ${err.message}</span></div>`;
+      btn.disabled = false;
+      btn.innerHTML = '🚀 تحديث الكل';
+      document.getElementById('progressBar').classList.remove('active');
+      return;
     }
 
+    // Mark not-found orders
+    let notFoundCount = 0;
+    for (const r of lookupResults) {
+      if (!r.found) {
+        notFoundCount++;
+        const num = r.orderNumber.replace('#', '');
+        const el  = document.getElementById(`result-${num}`);
+        if (el) {
+          el.querySelector('.result-status').className   = 'result-status result-notfound';
+          el.querySelector('.result-status').textContent = '؟';
+          el.querySelector('.result-msg').textContent    = 'غير موجود';
+        }
+      }
+    }
+
+    document.getElementById('progressFill').style.width = '20%';
+
+    // Filter only found orders
+    const foundOrders = lookupResults.filter(r => r.found);
+
+    if (foundOrders.length === 0) {
+      setPhase('');
+      btn.disabled = false;
+      btn.innerHTML = '🚀 تحديث الكل';
+      document.getElementById('errorCount').textContent = notFoundCount;
+      return;
+    }
+
+    // ── Phase 2: Flow Companion calls directly from browser ───────────
+    setPhase(`⏳ الخطوة 2/2: جاري تحديث ${foundOrders.length} أوردر...`);
+
+    let success = 0, errors = notFoundCount;
+    const total = parsedOrders.length;
+
+    for (let i = 0; i < foundOrders.length; i++) {
+      const r   = foundOrders[i];
+      const num = r.orderNumber.replace('#', '');
+      const el  = document.getElementById(`result-${num}`);
+
+      try {
+        const body = { itemId: r.orderId, specifier: currentSpecifier };
+        if (needsCourier(currentSpecifier)) {
+          body.additionalParameters = { stringParameter: currentCourier };
+        }
+
+        const res = await fetch(FLOW_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `bearer ${flowToken}`,
+          },
+          body: JSON.stringify(body),
+        });
+
+        if (res.ok) {
+          success++;
+          if (el) {
+            el.querySelector('.result-status').className   = 'result-status result-success';
+            el.querySelector('.result-status').textContent = '✓';
+          }
+        } else {
+          errors++;
+          const errData = await res.json().catch(() => ({}));
+          if (el) {
+            el.querySelector('.result-status').className   = 'result-status result-error';
+            el.querySelector('.result-status').textContent = '✗';
+            el.querySelector('.result-msg').textContent    = errData?.message || `HTTP ${res.status}`;
+          }
+        }
+      } catch (err) {
+        errors++;
+        if (el) {
+          el.querySelector('.result-status').className   = 'result-status result-error';
+          el.querySelector('.result-status').textContent = '✗';
+          el.querySelector('.result-msg').textContent    = err.message;
+        }
+      }
+
+      // Update progress (20% → 100% during phase 2)
+      const progress = 20 + ((i + 1) / foundOrders.length) * 80;
+      document.getElementById('progressFill').style.width = `${progress}%`;
+      document.getElementById('successCount').textContent = success;
+      document.getElementById('errorCount').textContent   = errors;
+    }
+
+    setPhase('');
     btn.disabled = false;
     btn.innerHTML = '🚀 تحديث الكل';
+
+    if (errors === 0) {
+      alert(`✅ تم تحديث ${success} أوردر بنجاح!\nالحالة: ${currentStatusLabel}${needsCourier(currentSpecifier) ? '\nالمندوب: ' + currentCourier : ''}`);
+    } else {
+      alert(`تم: ${success} ناجح، ${errors} فشل`);
+    }
   }
 </script>
 </body>
